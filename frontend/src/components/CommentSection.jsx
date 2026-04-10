@@ -1,16 +1,35 @@
 import React, { useState } from 'react';
 import { User, MessageSquare } from 'lucide-react';
+import api from '../services/api';
 import '../index.css';
 
-const CommentSection = ({ comments }) => {
+const CommentSection = ({ comments, threadId }) => {
   const [newComment, setNewComment] = useState('');
+  const [localComments, setLocalComments] = useState(comments);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
-    // Mock submit action
-    console.log('Comment submitted:', newComment);
-    setNewComment('');
+    if (!newComment.trim() || !threadId) return;
+    
+    setLoading(true);
+    try {
+      const { data } = await api.post(`/threads/${threadId}/comments`, {
+        content: newComment
+      });
+      // Mock full name display for instant feedback, would ideally fetch or utilize context
+      setLocalComments([...localComments, {
+        id: data._id,
+        author: 'You', 
+        content: data.content,
+        createdAt: 'Just now'
+      }]);
+      setNewComment('');
+    } catch (err) {
+      console.error('Failed to post comment', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -20,8 +39,8 @@ const CommentSection = ({ comments }) => {
       </h3>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-        {comments && comments.length > 0 ? (
-          comments.map(comment => (
+        {localComments && localComments.length > 0 ? (
+          localComments.map(comment => (
             <div key={comment.id} className="card" style={{ padding: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                 <User size={14} /> <span style={{ fontWeight: 500, color: 'var(--primary-color)' }}>{comment.author}</span> • {comment.createdAt}
@@ -47,8 +66,8 @@ const CommentSection = ({ comments }) => {
               style={{ resize: 'vertical' }}
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem' }}>
-            Post Comment
+          <button type="submit" className="btn btn-primary" style={{ marginTop: '0.5rem' }} disabled={loading}>
+            {loading ? 'Posting...' : 'Post Comment'}
           </button>
         </form>
       </div>

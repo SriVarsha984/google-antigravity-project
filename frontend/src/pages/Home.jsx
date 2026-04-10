@@ -1,23 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ThreadCard from '../components/ThreadCard';
 import { PlusCircle, Search } from 'lucide-react';
-
-const mockThreads = [
-  { id: '1', title: 'Welcome to the new Discussion Forum!', author: 'Admin User', createdAt: '2 hours ago', repliesCount: 5 },
-  { id: '2', title: 'React 19 features discussion', author: 'FrontendDev', createdAt: '4 hours ago', repliesCount: 12 },
-  { id: '3', title: 'Best practices for MERN stack authentication?', author: 'CodeNewbie', createdAt: '1 day ago', repliesCount: 8 }
-];
+import api from '../services/api';
 
 const Home = () => {
+  const [threads, setThreads] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const filteredThreads = mockThreads.filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()));
+  useEffect(() => {
+    const fetchThreads = async () => {
+      try {
+        const { data } = await api.get('/threads');
+        setThreads(data);
+      } catch (error) {
+        console.error('Failed to load threads', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchThreads();
+  }, []);
+
+  const filteredThreads = threads.filter(t => t.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="page-container">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h1>Discussion Board</h1>
+          <h1>Registration Successful! Discussion Board</h1>
           <p>Join the conversation and share your knowledge.</p>
         </div>
         <button className="btn btn-primary">
@@ -37,13 +48,24 @@ const Home = () => {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {filteredThreads.length > 0 ? (
+        {loading ? (
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading threads...</p>
+        ) : filteredThreads.length > 0 ? (
           filteredThreads.map(thread => (
-            <ThreadCard key={thread.id} thread={thread} />
+            <ThreadCard 
+              key={thread._id} 
+              thread={{
+                id: thread._id,
+                title: thread.title,
+                author: thread.author?.username || 'Unknown',
+                createdAt: new Date(thread.createdAt).toLocaleDateString(),
+                repliesCount: thread.repliesCount
+              }} 
+            />
           ))
         ) : (
           <div className="card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-            <p style={{ color: 'var(--text-muted)' }}>No topics found matching "{searchTerm}"</p>
+            <p style={{ color: 'var(--text-muted)' }}>No topics found.</p>
           </div>
         )}
       </div>

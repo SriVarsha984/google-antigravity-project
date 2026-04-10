@@ -8,19 +8,26 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useContext(AuthContext);
+  const [isLoading, setIsLoading] = useState(false);
+  const { registerUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!username || !email || !password) {
       setError('Please fill in all fields.');
       return;
     }
     
-    // Mock register logic
-    login({ username, email, role: 'user' });
-    navigate('/');
+    setIsLoading(true);
+    try {
+      await registerUser({ username, email, password });
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Registration failed. Try a different username/email.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -64,8 +71,8 @@ const Register = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-            <UserPlus size={18} /> Create Account
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isLoading}>
+            <UserPlus size={18} /> {isLoading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
         

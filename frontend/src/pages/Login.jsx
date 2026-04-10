@@ -7,23 +7,26 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login } = useContext(AuthContext);
+  const [isLoading, setIsLoading] = useState(false);
+  const { loginUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please fill in all fields.');
       return;
     }
     
-    // Mock login logic
-    if (email === 'admin@admin.com') {
-      login({ username: 'Admin User', email, role: 'admin' });
-    } else {
-      login({ username: email.split('@')[0], email, role: 'user' });
+    setIsLoading(true);
+    try {
+      await loginUser({ email, password });
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    navigate('/');
   };
 
   return (
@@ -57,17 +60,14 @@ const Login = () => {
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }}>
-            <LogIn size={18} /> Sign In
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '1rem' }} disabled={isLoading}>
+            <LogIn size={18} /> {isLoading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
         
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem' }}>
           Don't have an account? <Link to="/register" style={{ fontWeight: 600 }}>Register here</Link>
         </p>
-        <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          Tip: Login with admin@admin.com for Admin Panel access.
-        </div>
       </div>
     </div>
   );
