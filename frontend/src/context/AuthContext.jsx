@@ -7,6 +7,14 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const socialLogin = useCallback(async (token) => {
+    const { data } = await api.post('/auth/google', { token });
+    setUser(data);
+    localStorage.setItem('forum_user', JSON.stringify(data));
+    localStorage.setItem('forum_token', data.token);
+    return data;
+  }, []);
+
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('forum_user');
@@ -49,7 +57,7 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, logout, updateProfile }}>
+    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, logout, updateProfile, socialLogin }}>
       {children}
     </AuthContext.Provider>
   );
