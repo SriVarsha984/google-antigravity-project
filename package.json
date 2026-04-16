@@ -1,0 +1,12 @@
+{
+  "name": "mini-project-dfmp",
+  "version": "1.0.0",
+  "description": "Discussion Forum with Moderation Panel",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev": "npx concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

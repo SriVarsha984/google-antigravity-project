@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import CommentSection from '../components/CommentSection';
-import { User, Clock, ArrowLeft } from 'lucide-react';
+import { User, Clock, ArrowLeft, MessageCircle, Flag, Loader2, AlertCircle } from 'lucide-react';
 import api from '../services/api';
 
 const Thread = () => {
@@ -11,6 +11,14 @@ const Thread = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const timeAgo = (dateStr) => {
+    const diff = (Date.now() - new Date(dateStr)) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+  };
+
   useEffect(() => {
     const fetchThreadData = async () => {
       try {
@@ -18,7 +26,7 @@ const Thread = () => {
         setThread(data.thread);
         setComments(data.comments);
       } catch (err) {
-        setError('Thread not found or deleted.');
+        setError(err.response?.data?.message || 'Piece not found or has been withdrawn.');
       } finally {
         setLoading(false);
       }
@@ -26,42 +34,113 @@ const Thread = () => {
     fetchThreadData();
   }, [id]);
 
-  if (loading) return <div className="page-container" style={{ textAlign: 'center' }}>Loading...</div>;
-  if (error || !thread) return <div className="page-container" style={{ textAlign: 'center', color: 'var(--danger)' }}>{error}</div>;
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-6 animate-fade-in">
+        <div className="w-16 h-16 rounded-[2rem] bg-gradient-to-br from-primary-600 to-accent-purple flex items-center justify-center shadow-glow-lg">
+          <Loader2 className="w-6 h-6 text-white animate-spin" />
+        </div>
+        <p className="text-gray-500 font-bold uppercase tracking-widest text-[10px]">Loading Discussion</p>
+      </div>
+    );
+  }
 
-  const formattedComments = comments.map(c => ({
+  if (error || !thread) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 px-4 text-center animate-fade-in">
+        <div className="w-20 h-20 rounded-[2.5rem] bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-8">
+          <AlertCircle className="w-10 h-10 text-rose-400" />
+        </div>
+        <h2 className="text-2xl font-black text-white mb-2 tracking-tight">Access Denied</h2>
+        <p className="text-gray-500 font-medium mb-10 max-w-sm">{error || 'This discussion is no longer available.'}</p>
+        <Link to="/" className="btn-secondary px-8 py-4 font-bold">
+          <ArrowLeft size={18} /> Return to Home
+        </Link>
+      </div>
+    );
+  }
+
+  const formattedComments = comments.map((c) => ({
     id: c._id,
-    author: c.author?.username || 'Unknown User',
+    author: c.author?.username || 'Unknown',
     content: c.content,
-    createdAt: new Date(c.createdAt).toLocaleDateString()
+    createdAt: c.createdAt,
   }));
 
   return (
-    <div className="page-container">
-      <div>
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
-          <ArrowLeft size={16} /> Back to Discussions
+    <div className="max-w-4xl mx-auto py-6 animate-slide-up">
+      {/* Navigation Line */}
+      <div className="flex items-center gap-4 mb-10 group">
+        <Link
+          to="/"
+          className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/[0.08] transition-all"
+        >
+          <ArrowLeft size={18} />
         </Link>
-        <div className="card">
-          <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>{thread.title}</h1>
-          <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <User size={16} /> {thread.author?.username || 'Unknown User'}
-            </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Clock size={16} /> {new Date(thread.createdAt).toLocaleDateString()}
-            </span>
+        <div className="h-px flex-1 bg-white/[0.05]"></div>
+        <div className="text-[10px] font-black text-gray-600 uppercase tracking-[0.3em]">Viewing Discussion</div>
+        <div className="h-px flex-1 bg-white/[0.05]"></div>
+      </div>
+
+      {/* Hero Article Section */}
+      <article className="mb-10">
+        {thread.status === 'Flagged' && (
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest mb-8 animate-pulse">
+            <Flag size={12} /> Under Moderation Review
           </div>
-          <div style={{ whiteSpace: 'pre-wrap', color: 'var(--text-primary)', fontSize: '1.05rem', lineHeight: 1.8 }}>
-            {thread.content}
+        )}
+
+        <h1 className="font-display font-black text-4xl sm:text-5xl lg:text-6xl text-white tracking-tighter leading-[1.05] mb-10">
+          {thread.title}
+        </h1>
+
+        {/* Author & Stats bar */}
+        <div className="flex flex-wrap items-center justify-between gap-6 pb-10 mb-10 border-b border-white/[0.05]">
+          <div className="flex items-center gap-4">
+             <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary-600 to-accent-purple flex items-center justify-center text-white font-black text-lg shadow-glow-lg border border-white/10">
+               {thread.author?.username?.[0]?.toUpperCase() || '?'}
+             </div>
+             <div>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest leading-none mb-1.5">Published by</p>
+                <p className="text-base font-black text-primary-400 tracking-tight">@{thread.author?.username || 'System'}</p>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-8">
+            <div className="flex flex-col items-end">
+               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Time Elapsed</p>
+               <div className="flex items-center gap-2 text-sm font-bold text-gray-300">
+                  <Clock size={14} className="text-primary-500" />
+                  {timeAgo(thread.createdAt)}
+               </div>
+            </div>
+            <div className="flex flex-col items-end">
+               <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Engagements</p>
+               <div className="flex items-center gap-2 text-sm font-bold text-gray-300">
+                  <MessageCircle size={14} className="text-accent-purple" />
+                  {thread.repliesCount ?? formattedComments.length} Replies
+               </div>
+            </div>
           </div>
         </div>
+
+        {/* Core Content */}
+        <div className="prose prose-invert prose-lg max-w-none text-gray-300 leading-relaxed whitespace-pre-wrap text-lg sm:text-xl font-medium tracking-tight">
+          {thread.content}
+        </div>
+      </article>
+
+      {/* Discussion Footer Divider */}
+      <div className="flex items-center gap-6 my-16">
+         <div className="h-px flex-1 bg-white/[0.05]"></div>
+         <div className="w-2.5 h-2.5 rounded-full border-2 border-primary-500/30"></div>
+         <div className="h-px flex-1 bg-white/[0.05]"></div>
       </div>
-      
-      <CommentSection 
-        comments={formattedComments} 
-        threadId={thread._id} 
-      />
+
+      {/* Comment Section Integration */}
+      <div className="mt-10">
+        <CommentSection comments={formattedComments} threadId={thread._id} />
+      </div>
     </div>
   );
 };

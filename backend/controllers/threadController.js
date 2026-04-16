@@ -5,7 +5,23 @@ const Comment = require('../models/Comment');
 // @route   GET /api/threads
 const getThreads = async (req, res) => {
   try {
-    const threads = await Thread.find({ status: { $ne: 'Deleted' } })
+    const { domain, search } = req.query;
+    const filter = { status: { $ne: 'Deleted' } };
+    
+    if (domain) {
+      filter.domain = domain;
+    } else if (search) {
+      // Global Knowledge Search: include both general and domain-specific threads
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } }
+      ];
+    } else {
+      // Default Feed: Only general community discussions
+      filter.domain = '';
+    }
+
+    const threads = await Thread.find(filter)
       .populate('author', 'username')
       .sort({ createdAt: -1 });
     res.json(threads);
@@ -37,7 +53,7 @@ const getThreadById = async (req, res) => {
 // @route   POST /api/threads
 const createThread = async (req, res) => {
   try {
-    const { title, content } = req.body;
+    const { title, content, domain } = req.body;
     
     if (!title || !content) {
       return res.status(400).json({ message: 'Title and content are required' });
@@ -46,6 +62,7 @@ const createThread = async (req, res) => {
     const thread = await Thread.create({
       title,
       content,
+      domain: domain || '',
       author: req.user._id,
     });
 

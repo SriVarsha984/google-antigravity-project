@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, createContext } from 'react';
 import api from '../services/api';
 
 export const AuthContext = createContext();
@@ -8,40 +8,48 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Rehydrate user from storage if available
-    const storedUser = localStorage.getItem('forum_user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {}
+    try {
+      const storedUser = localStorage.getItem('forum_user');
+      if (storedUser) setUser(JSON.parse(storedUser));
+    } catch {
+      localStorage.removeItem('forum_user');
+      localStorage.removeItem('forum_token');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const loginUser = async (credentials) => {
+  const loginUser = useCallback(async (credentials) => {
     const { data } = await api.post('/auth/login', credentials);
     setUser(data);
     localStorage.setItem('forum_user', JSON.stringify(data));
     localStorage.setItem('forum_token', data.token);
     return data;
-  };
+  }, []);
 
-  const registerUser = async (userData) => {
+  const registerUser = useCallback(async (userData) => {
     const { data } = await api.post('/auth/register', userData);
     setUser(data);
     localStorage.setItem('forum_user', JSON.stringify(data));
     localStorage.setItem('forum_token', data.token);
     return data;
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
     localStorage.removeItem('forum_user');
     localStorage.removeItem('forum_token');
-  };
+  }, []);
+
+  const updateProfile = useCallback(async (profileData) => {
+    const { data } = await api.put('/users/profile', profileData);
+    setUser((prev) => ({ ...prev, ...data }));
+    localStorage.setItem('forum_user', JSON.stringify({ ...user, ...data }));
+    return data;
+  }, [user]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginUser, registerUser, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

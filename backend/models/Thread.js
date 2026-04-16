@@ -17,12 +17,17 @@ const threadSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['Clean', 'Flagged', 'Deleted'],
+    enum: ['Clean', 'Flagged', 'Deleted', 'Archived'],
     default: 'Clean',
   },
   repliesCount: {
     type: Number,
     default: 0,
+  },
+  domain: {
+    type: String,
+    default: '',
+    trim: true
   }
 }, {
   timestamps: true,

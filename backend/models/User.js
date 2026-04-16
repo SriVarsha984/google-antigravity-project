@@ -27,6 +27,37 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['Active', 'Suspended'],
     default: 'Active',
+  },
+  bio: {
+    type: String,
+    default: '',
+    maxLength: 200,
+  },
+  profilePic: {
+    type: String,
+    default: '',
+  },
+  name: {
+    type: String,
+    default: '',
+  },
+  phone: {
+    type: String,
+    default: '',
+  },
+  websiteUrl: {
+    type: String,
+    default: '',
+  },
+  theme: {
+    type: String,
+    enum: ['Auto', 'Light', 'Dark'],
+    default: 'Dark',
+  },
+  defaultTab: {
+    type: String,
+    enum: ['Home', 'Inbox'],
+    default: 'Home',
   }
 }, {
   timestamps: true,
